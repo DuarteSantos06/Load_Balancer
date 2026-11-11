@@ -46,9 +46,9 @@ Each item is meant to be one small commit.
 
 ### Phase 1: simple proxy
 - [x] Accept connections and forward to a hardcoded backend
-- [ ] One thread per client
-- [ ] Copy both directions concurrently (`try_clone` + two threads)
-- [ ] Handle backend connection errors with clear messages
+- [x] One thread per client
+- [x] Copy both directions concurrently (`try_clone` + two threads)
+- [x] Handle backend connection errors with clear messages
 
 ### Phase 2: multiple backends
 - [ ] Backend list (`Vec<SocketAddr>`) instead of a single address
