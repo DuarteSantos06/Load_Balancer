@@ -51,9 +51,9 @@ Each item is meant to be one small commit.
 - [x] Handle backend connection errors with clear messages
 
 ### Phase 2: multiple backends
-- [ ] Backend list (`Vec<SocketAddr>`) instead of a single address
+- [x] Backend list (`Vec<SocketAddr>`) instead of a single address
 - [ ] Load backends from a config file
-- [ ] Round-robin policy
+- [] Round-robin policy
 - [ ] Least-connections policy
 
 ### Phase 3: failure handling
