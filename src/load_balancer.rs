@@ -3,7 +3,7 @@ use std::io::{copy};
 use std::thread;
 use std::net::Shutdown;
 use std::io;
-use std::sync::atomic::{AtomicBool, AtomicUsize};
+use std::sync::atomic::{AtomicBool, AtomicUsize,Ordering};
 use std::sync::Arc;
 
 
@@ -42,12 +42,14 @@ fn main() -> std::io::Result<()>{
             Ok(p) => p,
             Err(e) => { eprintln!("peer_addr failed: {e}"); continue; }
         };
-        index = get_index(index,backends.len());
+        index = get_index(index,&backends);
+        backends[index].active_conns.fetch_add(1, Ordering::Relaxed);
         let backends = Arc::clone(&backends);
         thread::spawn(move || {
             if let Err(e) = handle(client,&backends[index]){
                 eprintln!("client {peer}: {e}");
             }
+            backends[index].active_conns.fetch_sub(1, Ordering::Relaxed);
         });
     }
     Ok(())
@@ -57,6 +59,7 @@ fn handle(client: TcpStream,backend:&Backend) -> io::Result<()> {
     let backend_fd = TcpStream::connect(backend.addr).map_err(|e| {
         io::Error::new(e.kind(), format!("connect to backend {} failed: {e}",backend.addr))
     })?;
+    
 
     let client_addr = client.peer_addr()?;
     let backend_addr = backend_fd.peer_addr()?;
@@ -76,6 +79,8 @@ fn handle(client: TcpStream,backend:&Backend) -> io::Result<()> {
     let result = copy(&mut backend_read, &mut client_write);
     finish(&result, &backend_read, &client_write);
     log("[down]", backend_addr, client_addr, &result);
+
+    
 
     client_to_backend.join().expect("upstream thread panicked");
     Ok(())
@@ -103,6 +108,22 @@ fn is_disconnect(e: &io::Error) -> bool {
     matches!(e.kind(), io::ErrorKind::ConnectionReset | io::ErrorKind::BrokenPipe)
 }
 
-fn get_index(prev_index: usize,n_backends: usize) -> usize {
+fn get_index(prev_index: usize,backends: &Arc<Vec<Backend>> ) -> usize {
+    let mut index = 0;
+    let mut min_conns = usize::MAX;
+
+    for (i, backend) in backends.iter().enumerate() {
+        let conns = backend.active_conns.load(Ordering::Relaxed); // this reads the value of active_conns atomically
+                                                            
+        if conns < min_conns {
+            index = i;
+            min_conns=conns;
+        }
+    }
+    return index
+}
+
+fn _get_index_round_robin(prev_index: usize,n_backends: usize) -> usize {
     if prev_index < n_backends-1 { return prev_index+1 } else {return  0 };
 }
+
