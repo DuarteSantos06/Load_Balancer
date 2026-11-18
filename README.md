@@ -53,8 +53,8 @@ Each item is meant to be one small commit.
 ### Phase 2: multiple backends
 - [x] Backend list (`Vec<SocketAddr>`) instead of a single address
 - [ ] Load backends from a config file
-- [] Round-robin policy
-- [ ] Least-connections policy
+- [x] Round-robin policy
+- [x] Least-connections policy
 
 ### Phase 3: failure handling
 - [ ] Timeout on `connect`
